@@ -1,6 +1,7 @@
 package com.intelematics.interview.adapters;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import com.intelematics.interview.R;
 import com.intelematics.interview.SongListActivity;
@@ -8,9 +9,19 @@ import com.intelematics.interview.db.DBManager;
 import com.intelematics.interview.db.SongManager;
 import com.intelematics.interview.models.Song;
 import com.intelematics.interview.net.ConnectionManager;
+import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.FailReason;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
+import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
+import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.text.Editable;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -32,6 +43,8 @@ public class SongListArrayAdapter extends ArrayAdapter<Song> implements Filterab
 	private ArrayList<Song> filteredSongsList;
 	private ArrayList<Song> songsList;
 
+	private ImageLoader mImageLoader = null;
+
 	//View Holder class for storing Row Item Views
 	static class ViewHolderListItem {
 		ImageView albumCover;
@@ -48,6 +61,20 @@ public class SongListArrayAdapter extends ArrayAdapter<Song> implements Filterab
 		this.songsList = songs;
 		this.filteredSongsList = songs;
 		this.dbManager = dbManager;
+
+
+		//Initialize the ImageLoader used for loading Images from URL in ListView
+		mImageLoader = ImageLoader.getInstance();
+		DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder()
+				.cacheInMemory(true)
+				.imageScaleType(ImageScaleType.EXACTLY)
+				.displayer(new FadeInBitmapDisplayer(300)).build();
+
+		ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(activity)
+				.defaultDisplayImageOptions(defaultOptions)
+				.memoryCache(new WeakMemoryCache()).build();
+
+		mImageLoader.init(config);
 	}
 
 	public void updateList(ArrayList<Song> songs) {
@@ -67,7 +94,7 @@ public class SongListArrayAdapter extends ArrayAdapter<Song> implements Filterab
 
 	@Override
 	public View getView(final int position, View convertView, ViewGroup parent) {
-		ViewHolderListItem viewHolderListItem;
+		final ViewHolderListItem viewHolderListItem;
 		if (convertView == null) {
 			LayoutInflater inflater = activity.getLayoutInflater();
 			convertView = inflater.inflate(R.layout.song_list_row, parent, false);
@@ -94,8 +121,42 @@ public class SongListArrayAdapter extends ArrayAdapter<Song> implements Filterab
 			viewHolderListItem.albumCover.setImageBitmap(song.getCover());
 		} else {
 			viewHolderListItem.albumCover.setImageResource(R.drawable.img_cover);
-			viewHolderListItem.progressBar.setVisibility(View.VISIBLE);
-		 	getCover(song);
+//			viewHolderListItem.progressBar.setVisibility(View.VISIBLE);
+//		 	getCover(song);
+
+			/*Get the Image using Universal Image Loader*/
+			mImageLoader.displayImage(song.getCoverURL(), viewHolderListItem.albumCover,
+				new ImageLoadingListener() {
+					@Override
+					public void onLoadingStarted(String s, View view) {
+						viewHolderListItem.progressBar.setVisibility(View.VISIBLE);
+					}
+
+					@Override
+					public void onLoadingFailed(String s, View view, FailReason failReason) {
+						viewHolderListItem.progressBar.setVisibility(View.INVISIBLE);
+					}
+
+					@Override
+					public void onLoadingComplete(String s, View view, Bitmap bitmap) {
+						viewHolderListItem.progressBar.setVisibility(View.INVISIBLE);
+						song.setCover(bitmap);
+						ByteArrayOutputStream stream = new ByteArrayOutputStream();
+						bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+						byte[] imageByteArray = stream.toByteArray();
+						SongManager songManager = new SongManager(activity, dbManager);
+						songManager.saveCover(song, imageByteArray);
+					}
+
+					@Override
+					public void onLoadingCancelled(String s, View view) {
+						viewHolderListItem.progressBar.setVisibility(View.INVISIBLE);
+					}
+				});
+			/*Get the Image using AsyncTask but this method has some issues while loading the images*/
+	/*		viewHolderListItem.albumCover.setTag(song.getCoverURL());
+			new ImageDownloaderTask(viewHolderListItem).execute(song);*/
+
 		}
 		
 		return convertView;
@@ -141,9 +202,8 @@ public class SongListArrayAdapter extends ArrayAdapter<Song> implements Filterab
 
     return filter;
 	}
-	
 
-    private void getCover(Song song){
+    private Bitmap getCover(Song song){
         if(song.getCover() == null){
             ConnectionManager connectionManager = new ConnectionManager(activity, song.getCoverURL());
             byte[] imageByteArray = connectionManager.requestImage().buffer();
@@ -153,8 +213,38 @@ public class SongListArrayAdapter extends ArrayAdapter<Song> implements Filterab
 
             SongManager songManager = new SongManager(activity, dbManager);
             songManager.saveCover(song, imageByteArray);
+			return cover;
         }
+		return null;
     }
 
-	
+	public class ImageDownloaderTask extends AsyncTask<Song, Void, Bitmap> {
+		private ViewHolderListItem mViewHolderListItem = null;
+		private int mPosition;
+
+		ImageDownloaderTask (ViewHolderListItem viewHolderListItem) {
+			mViewHolderListItem = viewHolderListItem;
+			mPosition = mViewHolderListItem.position;
+		}
+
+		@Override
+		protected Bitmap doInBackground(Song... song) {
+			return getCover(song[0]);
+		}
+
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+			mViewHolderListItem.progressBar.setVisibility(View.VISIBLE);
+		}
+
+		@Override
+		protected void onPostExecute(Bitmap result) {
+			super.onPostExecute(result);
+			mViewHolderListItem.progressBar.setVisibility(View.INVISIBLE);
+			if (result != null && mPosition == mViewHolderListItem.position) {
+				mViewHolderListItem.albumCover.setImageBitmap(result);
+			}
+		}
+	}
 }
