@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>    
+    <!-- DB General strings -->
+	<string name="sql_db_name">songCatalogue</string>
+    <string name="sql_db_directory">/data/data/com.intelematics.exercise/databases/songCatalogue.db</string>
+	
+	
+    <!-- SQL CREATE strings -->
+    <string name="sql_createtable_song">CREATE TABLE IF NOT EXISTS song (_id INT PRIMARY KEY, idSong INT UNIQUE, title TEXT, artist TEXT, price FLOAT, coverURL TEXT, cover TEXT);</string>
+    <string name="sql_droptable_song">DROP TABLE IF EXISTS song;</string>
+    
+	<!-- SQL Table key strings -->
+    <string name="sql_table_song">song</string>
+    
+    <!-- SQL Column keys strings -->
+    <string name="sql_column_song_id">_id</string>
+    <string name="sql_column_song_idsong">idSong</string>
+    <string name="sql_column_song_title">title</string>
+    <string name="sql_column_song_artist">artist</string>
+    <string name="sql_column_song_price">price</string>
+    <string name="sql_column_song_coverURL">coverURL</string>
+    <string name="sql_column_song_cover">cover</string>
+    
+    
+    <!-- SQL SELECT strings -->
+	<string name="sql_select_all_songs">
+	    SELECT _id, idSong, title, artist, price, coverURL, cover
+	    FROM song;
+    </string>
+    
+    <!-- SQL UPDATE strings -->
+    <string name="sql_update_song_cover_whereclause">idSong = ?</string>
+    
+    
+    
+</resources>

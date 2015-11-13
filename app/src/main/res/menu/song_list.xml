@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+	<item android:id="@+id/menu_refresh"
+	    android:title="Reload"
+	    android:icon="@drawable/icn_reload"
+	    android:showAsAction="always"
+	    android:orderInCategory="1" />
+	<item android:id="@+id/menu_sort_artist"
+	    android:title="Order by artist"
+	    android:showAsAction="never"
+	    android:orderInCategory="1" />
+	<item android:id="@+id/menu_sort_title"
+	    android:title="Order by title"
+	    android:showAsAction="never"
+	    android:orderInCategory="1" />
+	<item android:id="@+id/menu_sort_price"
+	    android:title="Order by price"
+	    android:showAsAction="never"
+	    android:orderInCategory="1" />
+	<item android:id="@+id/menu_sort_reverse"
+	    android:title="Revert current order"
+	    android:showAsAction="never"
+	    android:orderInCategory="1" />
+</menu>

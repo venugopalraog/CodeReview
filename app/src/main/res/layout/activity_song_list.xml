@@ -1,0 +1,39 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="16dp"
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp"
+    android:paddingTop="16dp"
+    tools:context=".SongListActivity" >
+
+    <EditText 
+        android:id="@+id/search_box"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:lines="1"
+        android:hint="Search"/>
+    
+    <LinearLayout 
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/search_box"
+        android:background="#B9B9B9">
+		<ListView
+			android:id="@+id/list_view" 
+			android:orientation="vertical"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:layout_margin="1dp"
+			android:background="#000000"
+			android:focusable="false"
+			android:divider="#B9B9B9"
+			android:dividerHeight="1dp"
+			android:footerDividersEnabled="true"
+			android:headerDividersEnabled="true"
+			android:scrollbars="none"/>
+	</LinearLayout>
+
+</RelativeLayout>
