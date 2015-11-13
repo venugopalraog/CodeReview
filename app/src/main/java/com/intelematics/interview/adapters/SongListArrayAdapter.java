@@ -10,7 +10,9 @@ import com.intelematics.interview.models.Song;
 import com.intelematics.interview.net.ConnectionManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.text.Editable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +31,16 @@ public class SongListArrayAdapter extends ArrayAdapter<Song> implements Filterab
 	private final SongListActivity activity;
 	private ArrayList<Song> filteredSongsList;
 	private ArrayList<Song> songsList;
+
+	//View Holder class for storing Row Item Views
+	static class ViewHolderListItem {
+		ImageView albumCover;
+		TextView songName;
+		TextView songArtist;
+		TextView songPrice;
+		ProgressBar progressBar;
+		int position;
+	}
 
 	public SongListArrayAdapter(SongListActivity activity, ArrayList<Song> songs, DBManager dbManager) {
 		super(activity, R.layout.song_list_row, songs);
@@ -55,28 +67,35 @@ public class SongListArrayAdapter extends ArrayAdapter<Song> implements Filterab
 
 	@Override
 	public View getView(final int position, View convertView, ViewGroup parent) {
+		ViewHolderListItem viewHolderListItem;
+		if (convertView == null) {
 			LayoutInflater inflater = activity.getLayoutInflater();
 			convertView = inflater.inflate(R.layout.song_list_row, parent, false);
 
-            ImageView albumCover = (ImageView)convertView.findViewById(R.id.album_cover);
-          TextView songName = (TextView)convertView.findViewById(R.id.song_title);
-            TextView songArtist = (TextView)convertView.findViewById(R.id.song_artist);
-            TextView songPrice = (TextView)convertView.findViewById(R.id.song_price);
-        ProgressBar progressBar = (ProgressBar)convertView.findViewById(R.id.progress_bar);
+			viewHolderListItem = new ViewHolderListItem();
+			viewHolderListItem.albumCover = (ImageView) convertView.findViewById(R.id.album_cover);
+			viewHolderListItem.songName = (TextView) convertView.findViewById(R.id.song_title);
+			viewHolderListItem.songArtist = (TextView) convertView.findViewById(R.id.song_artist);
+			viewHolderListItem.songPrice = (TextView) convertView.findViewById(R.id.song_price);
+			viewHolderListItem.progressBar = (ProgressBar) convertView.findViewById(R.id.progress_bar);
 
-
-		final Song song = filteredSongsList.get(position);
-		
-		songName.setText(song.getTitle());
-		  songArtist.setText(song.getArtist());
-		songPrice.setText("$" + String.valueOf(song.getPrice()));
-		
-		if(song.getCover() != null){
-	     albumCover.setImageBitmap(song.getCover());
+			convertView.setTag(viewHolderListItem);
 		} else {
-		 albumCover.setImageResource(R.drawable.img_cover);
-		 progressBar.setVisibility(View.VISIBLE);
-		 getCover(song);
+			viewHolderListItem = (ViewHolderListItem) convertView.getTag();
+		}
+		final Song song = filteredSongsList.get(position);
+		viewHolderListItem.position = position;
+		viewHolderListItem.songName.setText(song.getTitle());
+		viewHolderListItem.songArtist.setText(song.getArtist());
+		viewHolderListItem.songPrice.setText("$" + String.valueOf(song.getPrice()));
+
+		if(song.getCover() != null){
+			Log.d("venu", "Retriew Image Byte array from Database ");
+			viewHolderListItem.albumCover.setImageBitmap(song.getCover());
+		} else {
+			viewHolderListItem.albumCover.setImageResource(R.drawable.img_cover);
+			viewHolderListItem.progressBar.setVisibility(View.VISIBLE);
+		 	getCover(song);
 		}
 		
 		return convertView;
