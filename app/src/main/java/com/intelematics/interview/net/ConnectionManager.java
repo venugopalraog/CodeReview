@@ -14,27 +14,30 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.JsonReader;
+import android.util.Log;
 
 
 /**
  *
  */
 public class ConnectionManager {
+	private static final String TAG = "ConnectionManager";
 	private HttpURLConnection httpConnection = null;
 	private URL url = null;
 	private InputStream is = null;
 	private JsonReader jsonReader = null;
 	
 	private Context context;
-	
-	
+	private ConnectionRequestListener mConnectionRequestListener = null;
+
 	public ConnectionManager(Context context, String requestURL){
 		this.context = context;
-		
+		mConnectionRequestListener = (ConnectionRequestListener) context;
 		try {
 			url = new URL(requestURL);
 			
 		} catch (MalformedURLException e) {
+			mConnectionRequestListener.onExceptionOccurred(e);
 		}
 	}
 
@@ -46,16 +49,25 @@ public class ConnectionManager {
 
 	
 	public JsonReader requestJson(){
+		if (!isNetworkAvailable()) {
+			mConnectionRequestListener.onNetworkDown("No Network Connection");
+			return null;
+		}
+
 		try {
 			jsonReader = new JsonReader(new InputStreamReader(request(), "UTF-8"));
 		} catch (UnsupportedEncodingException e) {
+			mConnectionRequestListener.onExceptionOccurred(e);
 		}
 		
 		return jsonReader;
 	}
 	
 	public InputStream request(){
-
+		if (!isNetworkAvailable()) {
+			mConnectionRequestListener.onNetworkDown("No Network Connection");
+			return null;
+		}
 	    try {
 	        httpConnection = (HttpURLConnection) url.openConnection();
 
@@ -63,10 +75,13 @@ public class ConnectionManager {
 	        if (responseCode == HttpURLConnection.HTTP_OK) {
 	            is = httpConnection.getInputStream();
 	            
-	        }
+	        } else {
+				mConnectionRequestListener.onResponseErrorReceived("Server Response", String.valueOf(responseCode));
+			}
 	        
 	    } catch (Exception ex) {
-	    }
+			mConnectionRequestListener.onExceptionOccurred(ex);
+		}
 	    
 	    return is;
 	}
@@ -80,6 +95,7 @@ public class ConnectionManager {
 	    		httpConnection.disconnect();
 	    	}
 		} catch(Exception e){
+			mConnectionRequestListener.onExceptionOccurred(e);
 		}
 	}
 	
@@ -90,6 +106,7 @@ public class ConnectionManager {
 		BufferedInputStream bis = null;
 
 		if(!isNetworkAvailable()){
+			mConnectionRequestListener.onNetworkDown("No Network Connection");
 			return null;
 		}
 		
@@ -104,10 +121,12 @@ public class ConnectionManager {
 				while ((current = bis.read()) != -1) {
 					baf.append((byte) current);
 				}
-	            
-	        } 
+	        } else {
+				mConnectionRequestListener.onResponseErrorReceived("Server Response", String.valueOf(responseCode));
+			}
 	        
 	    } catch (Exception ex) {
+			mConnectionRequestListener.onExceptionOccurred(ex);
 
 	    }
 	    return baf;

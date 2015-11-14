@@ -6,6 +6,7 @@ import java.util.Comparator;
 import com.intelematics.interview.adapters.SongListArrayAdapter;
 import com.intelematics.interview.db.DBManager;
 import com.intelematics.interview.models.Song;
+import com.intelematics.interview.net.ConnectionRequestListener;
 import com.intelematics.interview.tasks.DownloadSongListTask;
 import com.intelematics.interview.tasks.ReadDBSongListTask;
 
@@ -29,7 +30,7 @@ import android.widget.TextView;
 /**
  *
  */
-public class SongListActivity extends Activity {
+public class SongListActivity extends Activity implements ConnectionRequestListener {
 	private DBManager dbManager;
 	
 	private View headerView;
@@ -92,10 +93,10 @@ public class SongListActivity extends Activity {
                    }
                })
                .setNegativeButton("Download", new DialogInterface.OnClickListener() {
-                   public void onClick(DialogInterface dialog, int id) {
-                	   retrieveSongList();
-                   }
-               });
+				   public void onClick(DialogInterface dialog, int id) {
+					   retrieveSongList();
+				   }
+			   });
 
 		AlertDialog dialog = builder.create();
 		dialog.show();
@@ -204,14 +205,14 @@ public class SongListActivity extends Activity {
 	
 	public void sortListByPrice(){
 		Collections.sort(songList, new Comparator<Song>() {
-		    public int compare(Song song0, Song song1) {
-		    	int priceCompare = ((Double)song0.getPrice()).compareTo((Double)song1.getPrice());
-		    	if(priceCompare != 0){
-		    		return priceCompare;
-		    	} else{
-		    		return song0.getTitle().compareTo(song1.getTitle());
-		    	}
-		    }
+			public int compare(Song song0, Song song1) {
+				int priceCompare = ((Double) song0.getPrice()).compareTo((Double) song1.getPrice());
+				if (priceCompare != 0) {
+					return priceCompare;
+				} else {
+					return song0.getTitle().compareTo(song1.getTitle());
+				}
+			}
 		});
 		listAdapter.updateList(songList, searchBox.getText());
 	}
@@ -221,5 +222,68 @@ public class SongListActivity extends Activity {
 		listAdapter.updateList(songList, searchBox.getText());
 	}
 
-	
+
+	@Override
+	public void onNetworkDown(final String error) {
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				AlertDialog alertDialog = new AlertDialog.Builder(SongListActivity.this).create();
+				alertDialog.setTitle("Network Down");
+				alertDialog.setMessage(error);
+				alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int which) {
+								loadDialog.dismiss();
+								dialog.dismiss();
+							}
+						});
+				alertDialog.show();
+			}
+		});
+	}
+
+	@Override
+	public void onResponseErrorReceived(final String error_content, final String error_id) {
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				AlertDialog alertDialog = new AlertDialog.Builder(SongListActivity.this).create();
+				alertDialog.setTitle("Error Response");
+				alertDialog.setMessage(error_content + ": " + error_id);
+				alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int which) {
+								loadDialog.dismiss();
+								dialog.dismiss();
+							}
+						});
+				alertDialog.show();
+			}
+		});
+
+	}
+
+	@Override
+	public void onExceptionOccurred(final Exception ex) {
+
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				AlertDialog alertDialog = new AlertDialog.Builder(SongListActivity.this).create();
+				alertDialog.setTitle("Exception Occured");
+				alertDialog.setMessage(ex.getMessage());
+				alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int which) {
+								loadDialog.dismiss();
+								dialog.dismiss();
+							}
+						});
+				alertDialog.show();
+			}
+		});
+
+	}
+
 }

@@ -10,11 +10,12 @@ import com.intelematics.interview.models.Song;
 import com.intelematics.interview.net.ConnectionManager;
 import com.intelematics.interview.util.JsonParser;
 import android.os.AsyncTask;
+import android.util.JsonReader;
 
 /**
  *
  */
-public class DownloadSongListTask extends AsyncTask<Void, Void, Void> {
+public class DownloadSongListTask extends AsyncTask<Void, Void, Boolean> {
 	private DBManager dbManager;
 	private SongListActivity activity;
 	private ArrayList<Song> songList;
@@ -28,7 +29,7 @@ public class DownloadSongListTask extends AsyncTask<Void, Void, Void> {
 	}
 	
 	@Override
-	protected Void doInBackground(Void... params) {
+	protected Boolean doInBackground(Void... params) {
 		JsonParser parser = new JsonParser();
 
         // Rock version of the app
@@ -40,20 +41,19 @@ public class DownloadSongListTask extends AsyncTask<Void, Void, Void> {
         // Classic version of the app
         //connectionManager = new ConnectionManager(activity, https://itunes.apple.com/search?term=classick&amp;media=music&amp;entity=song&amp;limit=50);
 
-
-		songList = parser.parseSongList(connectionManager.requestJson());
+		JsonReader jsonReader = connectionManager.requestJson();
+		if (jsonReader != null) {
+			songList = parser.parseSongList(jsonReader);
+			SongManager songManager = new SongManager(activity, dbManager);
+			songManager.saveSongsList(songList);
+		}
 		connectionManager.closeConnection();
-		
-		SongManager songManager = new SongManager(activity, dbManager);
-		songManager.saveSongsList(songList);
-		
-		return null;
+		return (jsonReader != null);
 	}
 
-    protected void onPostExecute(Void result) {
-    	activity.updateSongList(songList);
+    protected void onPostExecute(Boolean result) {
+		if (result) {
+			activity.updateSongList(songList);
+		}
     }
-
-
-
 }
